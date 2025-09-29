@@ -45,7 +45,7 @@ const Players: React.FC = () => {
     loadSampleVideos();
     checkLiveStreams();
     generatePlayerUrls();
-    
+
     // Verificar streams a cada 30 segundos
     const interval = setInterval(checkLiveStreams, 30000);
     return () => clearInterval(interval);
@@ -54,28 +54,28 @@ const Players: React.FC = () => {
   const checkLiveStreams = async () => {
     try {
       const token = await getToken();
-      
+
       // Verificar stream OBS
       const obsResponse = await fetch('/api/streaming/obs-status', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (obsResponse.ok) {
         const obsData = await obsResponse.json();
         setObsStreamActive(obsData.success && obsData.obs_stream?.is_live);
       }
-      
+
       // Verificar transmissão de playlist
       const streamResponse = await fetch('/api/streaming/status', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (streamResponse.ok) {
         const streamData = await streamResponse.json();
         const isPlaylistActive = streamData.success && streamData.is_live && streamData.stream_type === 'playlist';
         setLiveStreamActive(isPlaylistActive);
         setPlaylistTransmissionActive(isPlaylistActive);
-        
+
         if (isPlaylistActive && streamData.transmission) {
           // Buscar nome da playlist
           try {
@@ -106,7 +106,7 @@ const Players: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const folders = await response.json();
-      
+
       if (folders.length > 0) {
         const videosResponse = await fetch(`/api/videos?folder_id=${folders[0].id}`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -125,7 +125,7 @@ const Players: React.FC = () => {
       const response = await fetch('/api/player-port/url', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -141,13 +141,13 @@ const Players: React.FC = () => {
   const getActiveStreamUrl = () => {
     if (playlistTransmissionActive) {
       // Priorizar playlist se estiver ativa
-      return `http://samhost.wcore.com.br:1935/samhost/${userLogin}_playlist/playlist.m3u8`;
+      return `https://stmv1.udicast.com/:1935/${userLogin}/${userLogin}/playlist.m3u8`;
     } else if (obsStreamActive) {
-      return `http://samhost.wcore.com.br:1935/samhost/${userLogin}_live/playlist.m3u8`;
+      return `https://stmv1.udicast.com/:1935/${userLogin}/${userLogin}_live/playlist.m3u8`;
     } else if (sampleVideos.length > 0) {
       return getVideoUrl(sampleVideos[0].url);
     }
-    return `http://samhost.wcore.com.br:1935/samhost/${userLogin}_live/playlist.m3u8`;
+    return `https://stmv1.udicast.com/:1935/${userLogin}/${userLogin}_live/playlist.m3u8`;
   };
 
   const getActiveStreamName = () => {
@@ -161,32 +161,32 @@ const Players: React.FC = () => {
 
   const getVideoUrl = (url: string) => {
     if (!url) return '';
-    
+
     // Se já é uma URL completa, usar como está
     if (url.startsWith('http')) {
       return url;
     }
-    
+
     // Para URLs do sistema, construir URL do player iframe na porta
     const pathParts = url.split('/');
     if (pathParts.length >= 3) {
       const userPath = pathParts[0];
       const folderName = pathParts[1];
       const fileName = pathParts[2];
-      
+
       // Usar player na porta do sistema
-      const baseUrl = process.env.NODE_ENV === 'production' 
+      const baseUrl = process.env.NODE_ENV === 'production'
         ? 'http://samhost.wcore.com.br:3001'
         : 'http://localhost:3001';
-      
+
       return `${baseUrl}/api/player-port/iframe?login=${userPath}&vod=${folderName}/${fileName}&aspectratio=16:9&player_type=1&autoplay=false`;
     }
-    
+
     // Fallback
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = process.env.NODE_ENV === 'production'
       ? 'http://samhost.wcore.com.br:3001'
       : 'http://localhost:3001';
-    
+
     return `${baseUrl}/api/player-port/iframe?stream=${userLogin}_live`;
   };
 
@@ -289,12 +289,12 @@ const Players: React.FC = () => {
 
   const activatePlayer = (playerId: string) => {
     setActivePlayer(playerId);
-    
+
     // Regenerar URLs se for o player da porta
     if (playerId === 'iframe-port') {
       generatePlayerUrls();
     }
-    
+
     toast.success(`Player ${playerConfigs.find(p => p.id === playerId)?.name} ativado!`);
   };
 
@@ -328,7 +328,7 @@ const Players: React.FC = () => {
 
   const renderPlayerPreview = (config: PlayerConfig) => {
     const isActive = config.id === activePlayer;
-    
+
     if (!isActive) {
       return (
         <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -345,17 +345,14 @@ const Players: React.FC = () => {
         if (config.id === 'iframe-port' && playerUrl) {
           return (
             <div className="h-48 bg-black rounded-lg overflow-hidden">
-              <IFrameVideoPlayer
+              <iframe
                 src={playerUrl}
-                title="Player na Porta do Sistema"
-                autoplay={false}
-                controls={true}
                 className="w-full h-full"
-                onError={(error) => {
+                frameBorder="0"
+                allowFullScreen
+                title="Player na Porta do Sistema"
+                onError={(error: unknown) => {
                   console.error('Erro no IFrame player:', error);
-                }}
-                onReady={() => {
-                  console.log('IFrame player pronto');
                 }}
               />
             </div>
@@ -457,12 +454,11 @@ const Players: React.FC = () => {
           <div className="flex items-center space-x-3">
             {(obsStreamActive || liveStreamActive) && (
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${
-                  playlistTransmissionActive ? 'bg-blue-500' : 'bg-red-500'
-                }`}></div>
+                <div className={`w-2 h-2 rounded-full animate-pulse ${playlistTransmissionActive ? 'bg-blue-500' : 'bg-red-500'
+                  }`}></div>
                 <span className="text-sm font-medium text-red-600">
                   {playlistTransmissionActive ? `📺 PLAYLIST: ${activePlaylistName}` :
-                   obsStreamActive ? 'OBS AO VIVO' : 'PLAYLIST AO VIVO'}
+                    obsStreamActive ? 'OBS AO VIVO' : 'PLAYLIST AO VIVO'}
                 </span>
               </div>
             )}
@@ -547,7 +543,7 @@ const Players: React.FC = () => {
                 <Copy className="h-4 w-4 mr-2" />
                 Copiar Código
               </button>
-              
+
               {config.type === 'iframe' && config.previewUrl && (
                 <button
                   onClick={() => window.open(config.previewUrl, '_blank')}
@@ -565,7 +561,7 @@ const Players: React.FC = () => {
       {/* Códigos de Incorporação */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Códigos de Incorporação</h2>
-        
+
         <div className="space-y-6">
           {playerConfigs.map((config) => (
             <div key={config.id} className="border border-gray-200 rounded-lg p-4">
@@ -590,7 +586,7 @@ const Players: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               <pre className="bg-gray-50 p-3 rounded-md text-sm overflow-x-auto">
                 <code>{config.code}</code>
               </pre>
@@ -601,7 +597,7 @@ const Players: React.FC = () => {
 
       {/* Modal de Visualização */}
       {showPreview && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -609,9 +605,8 @@ const Players: React.FC = () => {
             }
           }}
         >
-          <div className={`bg-black rounded-lg relative ${
-            isFullscreen ? 'w-screen h-screen' : 'max-w-4xl w-full h-[70vh]'
-          }`}>
+          <div className={`bg-black rounded-lg relative ${isFullscreen ? 'w-screen h-screen' : 'max-w-4xl w-full h-[70vh]'
+            }`}>
             {/* Controles do Modal */}
             <div className="absolute top-4 right-4 z-20 flex items-center space-x-2">
               <button
@@ -621,7 +616,7 @@ const Players: React.FC = () => {
               >
                 {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
               </button>
-              
+
               <button
                 onClick={closePreview}
                 className="text-white bg-red-600 hover:bg-red-700 rounded-full p-3 transition-colors duration-200 shadow-lg"
@@ -639,19 +634,15 @@ const Players: React.FC = () => {
 
             {/* Player */}
             <div className={`w-full h-full ${isFullscreen ? 'p-0' : 'p-4 pt-16'}`}>
-              <IFrameVideoPlayer
+              <iframe
                 src={playerUrl || previewVideo?.url || getActiveStreamUrl()}
                 title={previewVideo?.nome}
-                isLive={previewVideo?.id === 0}
-                autoplay={true}
-                controls={true}
                 className="w-full h-full"
-                onError={(error) => {
+                frameBorder="0"
+                allowFullScreen
+                onError={(error: unknown) => {
                   console.error('Erro no player de preview:', error);
                   toast.error('Erro ao carregar vídeo');
-                }}
-                onReady={() => {
-                  console.log('Player de preview pronto');
                 }}
               />
             </div>

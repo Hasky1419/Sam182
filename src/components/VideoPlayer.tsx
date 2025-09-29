@@ -99,11 +99,16 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
       console.error('Erro ao carregar logos:', error);
     }
   };
+  
+  const buildExternalPlayerUrl = (videoUrl: string): string => {
+    // Exemplo simples, ajusta conforme sua necessidade
+    return `https://stmv1.udicast.com/external-player?video=${encodeURIComponent(videoUrl)}`;
+  };
 
   const loadQualityLevels = async () => {
     // Simular níveis de qualidade baseados no limite do usuário
     const userBitrateLimit = user?.bitrate || 2500;
-    
+
     const levels = [
       { label: 'Auto', src: videoUrl || '', bitrate: 0, resolution: 'Auto' }
     ];
@@ -123,18 +128,18 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
 
     setQualityLevels(levels);
   };
-  
+
 
   const generatePlayerCode = () => {
     const baseUrl = window.location.origin;
-    
+
     // Construir URL do player externo
     let playerUrl = '';
     if (videoUrl) {
       // Se é um vídeo específico, construir URL do player
       const cleanPath = videoUrl.replace(/^\/+/, '').replace(/^(content\/|streaming\/)?/, '');
       const pathParts = cleanPath.split('/');
-      
+
       if (pathParts.length >= 3) {
         const userLogin = pathParts[0];
         const folderName = pathParts[1];
@@ -149,7 +154,7 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
     } else {
       playerUrl = `${baseUrl}/api/players/iframe?stream=${userLogin}_live`;
     }
-    
+
     switch (selectedPlayer) {
       case 'html5':
         return `<!-- Player iFrame Otimizado -->
@@ -209,7 +214,7 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
       {/* Configurações do Player */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Configurações do Player</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -217,9 +222,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
             </label>
             <select
               value={playerConfig.aspectRatio}
-              onChange={(e) => setPlayerConfig(prev => ({ 
-                ...prev, 
-                aspectRatio: e.target.value as any 
+              onChange={(e) => setPlayerConfig(prev => ({
+                ...prev,
+                aspectRatio: e.target.value as any
               }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
             >
@@ -235,9 +240,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
               <input
                 type="checkbox"
                 checked={playerConfig.autoplay}
-                onChange={(e) => setPlayerConfig(prev => ({ 
-                  ...prev, 
-                  autoplay: e.target.checked 
+                onChange={(e) => setPlayerConfig(prev => ({
+                  ...prev,
+                  autoplay: e.target.checked
                 }))}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
@@ -248,9 +253,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
               <input
                 type="checkbox"
                 checked={playerConfig.muted}
-                onChange={(e) => setPlayerConfig(prev => ({ 
-                  ...prev, 
-                  muted: e.target.checked 
+                onChange={(e) => setPlayerConfig(prev => ({
+                  ...prev,
+                  muted: e.target.checked
                 }))}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
@@ -261,9 +266,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
               <input
                 type="checkbox"
                 checked={playerConfig.loop}
-                onChange={(e) => setPlayerConfig(prev => ({ 
-                  ...prev, 
-                  loop: e.target.checked 
+                onChange={(e) => setPlayerConfig(prev => ({
+                  ...prev,
+                  loop: e.target.checked
                 }))}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
@@ -278,9 +283,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
                 <input
                   type="checkbox"
                   checked={watermarkConfig.enabled}
-                  onChange={(e) => setWatermarkConfig(prev => ({ 
-                    ...prev, 
-                    enabled: e.target.checked 
+                  onChange={(e) => setWatermarkConfig(prev => ({
+                    ...prev,
+                    enabled: e.target.checked
                   }))}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
@@ -291,9 +296,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
                 <div className="space-y-2">
                   <select
                     value={watermarkConfig.url}
-                    onChange={(e) => setWatermarkConfig(prev => ({ 
-                      ...prev, 
-                      url: e.target.value 
+                    onChange={(e) => setWatermarkConfig(prev => ({
+                      ...prev,
+                      url: e.target.value
                     }))}
                     className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                   >
@@ -307,9 +312,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
 
                   <select
                     value={watermarkConfig.position}
-                    onChange={(e) => setWatermarkConfig(prev => ({ 
-                      ...prev, 
-                      position: e.target.value as any 
+                    onChange={(e) => setWatermarkConfig(prev => ({
+                      ...prev,
+                      position: e.target.value as any
                     }))}
                     className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                   >
@@ -329,9 +334,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
                       min="10"
                       max="100"
                       value={watermarkConfig.opacity}
-                      onChange={(e) => setWatermarkConfig(prev => ({ 
-                        ...prev, 
-                        opacity: parseInt(e.target.value) 
+                      onChange={(e) => setWatermarkConfig(prev => ({
+                        ...prev,
+                        opacity: parseInt(e.target.value)
                       }))}
                       className="w-full"
                     />
@@ -348,9 +353,9 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
                 <input
                   type="checkbox"
                   checked={socialConfig.enabled}
-                  onChange={(e) => setSocialConfig(prev => ({ 
-                    ...prev, 
-                    enabled: e.target.checked 
+                  onChange={(e) => setSocialConfig(prev => ({
+                    ...prev,
+                    enabled: e.target.checked
                   }))}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
@@ -445,7 +450,7 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
       {/* Código de Incorporação */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Código de Incorporação</h3>
-        
+
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -469,10 +474,10 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
               <span className="font-medium text-gray-700">URLs de Streaming:</span>
               <ul className="text-gray-600 mt-1 space-y-1">
                 <li>• <strong>Player:</strong> {`https://stmv1.udicast.com:1443/play.php?login=${userLogin}&video=pasta/arquivo.mp4`}</li>
-                <li>• <strong>RTMP:</strong> {\`rtmp://samhost.wcore.com.br:1935/samhost/${userLogin}_live`}</li>
+                <li>• <strong>RTMP:</strong> {`rtmp://stmv1.udicast.com:1935/${userLogin}/${userLogin}_live`}</li>
               </ul>
             </div>
-            
+
             <div>
               <span className="font-medium text-gray-700">Configurações Ativas:</span>
               <ul className="text-gray-600 mt-1 space-y-1">
@@ -490,7 +495,7 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
       {/* Informações Técnicas */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-blue-900 font-medium mb-3">📋 Informações Técnicas</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-800 text-sm">
           <div>
             <h4 className="font-medium mb-2">Recursos Ativos:</h4>
@@ -502,7 +507,7 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
               <li>• <strong>Fallback:</strong> Abre em nova aba automaticamente</li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2">Compatibilidade:</h4>
             <ul className="space-y-1">
@@ -515,8 +520,8 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
 
         <div className="mt-4 p-3 bg-blue-100 rounded-md">
           <p className="text-blue-900 text-sm">
-            <strong>🚀 Sistema Otimizado:</strong> O player utiliza streaming adaptativo com suporte a Range requests, 
-            garantindo reprodução suave mesmo para arquivos grandes. A conversão automática para MP4 garante 
+            <strong>🚀 Sistema Otimizado:</strong> O player utiliza streaming adaptativo com suporte a Range requests,
+            garantindo reprodução suave mesmo para arquivos grandes. A conversão automática para MP4 garante
             compatibilidade máxima com todos os dispositivos.
           </p>
         </div>

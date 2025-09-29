@@ -80,7 +80,7 @@ function checkActiveTransmission($pdo, $userId) {
     if ($user) {
         // Simular verificação de stream OBS
         $userLogin = $user['usuario'] ?: explode('@', $user['email'])[0];
-        $obsStreamUrl = "http://stmv1.udicast.com:80/samhost/{$userLogin}_live/playlist.m3u8";
+        $obsStreamUrl = "http://stmv1.udicast.com:80/${userLogin}/{$userLogin}_live/playlist.m3u8";
         
         // Verificar se stream está ativo (simplificado)
         $headers = @get_headers($obsStreamUrl, 1);
@@ -122,14 +122,14 @@ function buildStreamUrl($userData, $transmissionData = null) {
     
     if ($transmissionData) {
         if ($transmissionData['type'] === 'playlist') {
-            return "http://{$domain}:80/samhost/{$userLogin}_playlist/playlist.m3u8";
+            return "http://{$domain}:80/${userLogin}/{$userLogin}_playlist/playlist.m3u8";
         } elseif ($transmissionData['type'] === 'obs') {
-            return "http://{$domain}:80/samhost/{$userLogin}_live/playlist.m3u8";
+            return "http://{$domain}:80/${userLogin}/{$userLogin}_live/playlist.m3u8";
         }
     }
     
     // Fallback para stream padrão
-    return "http://{$domain}:80/samhost/{$userLogin}_live/playlist.m3u8";
+    return "http://{$domain}:80/${userLogin}/{$userLogin}_live/playlist.m3u8";
 }
 
 // Parâmetros da URL

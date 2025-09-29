@@ -83,9 +83,9 @@
 ### Para Transmissão ao Vivo (OBS)
 - **RTMP URL:** `rtmp://samhost.wcore.com.br:1935/{usuario}`
 - **Stream Key:** `{usuario}_live`
-- **HLS Playback:** `http://stmv1.udicast.com:80/{usuario}/{usuario}_live/playlist.m3u8`
+- **HLS Playback:** `https://stmv1.udicast.com:80/{usuario}/{usuario}_live/playlist.m3u8`
 - **HLS Seguro:** `https://stmv1.udicast.com:443/{usuario}/{usuario}_live/playlist.m3u8`
-- **DASH Playback:** `http://stmv1.udicast.com:80/{usuario}/{usuario}_live/manifest.mpd`
+- **DASH Playback:** `https://stmv1.udicast.com:80/{usuario}/{usuario}_live/manifest.mpd`
 - **RTSP Playback:** `rtsp://stmv1.udicast.com:554/{usuario}/{usuario}_live`
 
 ### Para Vídeos VOD

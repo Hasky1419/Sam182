@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import IFrameVideoPlayer from './IFrameVideoPlayer';
 import { Play, Settings, Eye, Share2, Download, Zap, Monitor, Activity, Radio, Wifi, WifiOff, AlertCircle, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface StreamingPlayerManagerProps {
   className?: string;
@@ -108,12 +109,12 @@ const StreamingPlayerManager: React.FC<StreamingPlayerManagerProps> = ({
           
           if (data.stream_type === 'playlist' && data.transmission) {
             // Para playlist, usar SMIL conforme PHP: smil:transcoder.smil ou smil:playlists_agendamentos.smil
-            streamUrl = `https://stmv1.udicast.com/samhost/smil:playlists_agendamentos.smil/playlist.m3u8`;
+            streamUrl = `https://stmv1.udicast.com/${userLogin}/${userLogin}/playlist.m3u8`;
             title = `📺 Playlist: ${data.transmission.playlist_nome || data.transmission.titulo}`;
             console.log('🎵 Stream de playlist detectado:', streamUrl);
           } else if (data.stream_type === 'obs' && data.obs_stream?.is_live) {
             // Para OBS, usar formato padrão: servidor/login/login/playlist.m3u8
-            streamUrl = `https://stmv1.udicast.com/samhost/${userLogin}_live/playlist.m3u8`;
+            streamUrl = `https://stmv1.udicast.com/${userLogin}/${userLogin}_live/playlist.m3u8`;
             title = `📡 OBS: ${data.obs_stream.streamName || `${userLogin}_live`}`;
             console.log('📡 Stream OBS detectado:', streamUrl);
           }

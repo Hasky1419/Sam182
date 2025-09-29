@@ -21,7 +21,7 @@ class RelayManager {
             }
 
             // Construir URL de saída
-            const outputUrl = `rtmp://samhost.wcore.com.br:1935/samhost/${output_stream_name}`;
+            const outputUrl = `rtmp://samhost.wcore.com.br:1935/${userLogin}/${output_stream_name}`;
             
             // Configurar argumentos do FFmpeg baseado no tipo
             let ffmpegArgs;

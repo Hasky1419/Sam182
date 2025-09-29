@@ -6,6 +6,29 @@ const { spawn } = require('child_process');
 
 const router = express.Router();
 
+const axios = require("axios");
+
+async function checkWowzaStream(app, instance, streamName) {
+  try {
+    const res = await axios.get(
+      `http://wowza-host:8087/v2/servers/_defaultServer_/vhosts/_defaultVHost_/applications/${app}/instances/${instance}/incomingstreams`,
+      {
+        auth: {
+          username: process.env.WOWZA_API_USER,
+          password: process.env.WOWZA_API_PASS
+        }
+      }
+    );
+
+    const streams = res.data.incomingStreams || [];
+    return streams.some(s => s.name === streamName);
+  } catch (err) {
+    console.error("Erro ao consultar Wowza:", err.message);
+    return false;
+  }
+}
+
+
 // Mapa de processos ativos de transmissão
 const activeTransmissions = new Map();
 
@@ -294,10 +317,10 @@ router.post('/start-live', authMiddleware, async (req, res) => {
 
           const wowzaHost = 'stmv1.udicast.com';
           const playerUrls = {
-            hls: `https://${wowzaHost}/samhost/smil:playlists_agendamentos.smil/playlist.m3u8`,
-            hls_http: `https://${wowzaHost}/samhost/smil:playlists_agendamentos.smil/playlist.m3u8`,
-            rtsp: `rtsp://${wowzaHost}:554/samhost/smil:playlists_agendamentos.smil`,
-            dash: `https://${wowzaHost}/samhost/smil:playlists_agendamentos.smil/manifest.mpd`
+            hls: `https://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`,
+            hls_http: `https://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`,
+            rtsp: `rtsp://${wowzaHost}:554/${userLogin}/${userLogin}`,
+            dash: `https://${wowzaHost}/${userLogin}/${userLogin}/manifest.mpd`
           };
 
           res.json({
@@ -499,31 +522,27 @@ router.delete('/remove-live/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/streaming/status - Status geral das transmissões
 router.get('/status', authMiddleware, async (req, res) => {
   try {
-    // Para revendas, usar o ID efetivo do usuário
     const userId = req.user.effective_user_id || req.user.id;
     const userLogin = req.user.usuario || (req.user.email ? req.user.email.split('@')[0] : `user_${userId}`);
 
-    // Verificar se response já foi enviado
-    let responseSent = false;
-    const sendResponse = (data) => {
-      if (!responseSent) {
-        responseSent = true;
-        res.json(data);
-      }
+    // Função para formatar uptime
+    const formatDuration = (seconds) => {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h}h ${m}m ${s}s`;
     };
-    // Verificar transmissões de playlist ativas
+
+    // Verificar transmissões de playlist ou lives, independente do status
     const [activeRows] = await db.execute(
       `SELECT t.*, p.nome as playlist_nome 
        FROM transmissoes t 
        LEFT JOIN playlists p ON t.codigo_playlist = p.id 
-       WHERE (t.codigo_stm = ? OR t.codigo_stm IN (
-         SELECT codigo FROM streamings WHERE codigo_cliente = ?
-       )) AND t.status = "ativa" 
+       WHERE t.codigo_stm = ? 
        ORDER BY t.data_inicio DESC LIMIT 1`,
-      [userId, userId]
+      [userId]
     );
 
     if (activeRows.length > 0) {
@@ -533,7 +552,7 @@ router.get('/status', authMiddleware, async (req, res) => {
       const diffMs = now.getTime() - dataInicio.getTime();
       const uptime = formatDuration(Math.floor(diffMs / 1000));
 
-      sendResponse({
+      return res.json({
         success: true,
         is_live: true,
         stream_type: 'playlist',
@@ -544,68 +563,62 @@ router.get('/status', authMiddleware, async (req, res) => {
           playlist_nome: activeTransmission.playlist_nome,
           data_inicio: activeTransmission.data_inicio,
           data_fim: activeTransmission.data_fim,
-          stream_url: `https://stmv1.udicast.com/${userLogin}/smil:playlists_agendamentos.smil/playlist.m3u8`,
+          stream_url: `https://stmv1.udicast.com/${userLogin}/${userLogin}/playlist.m3u8`,
           stats: {
-            viewers: Math.floor(Math.random() * 50) + 10, // Simular espectadores
+            viewers: Math.floor(Math.random() * 50) + 10,
             bitrate: 2500,
             uptime: uptime,
             isActive: true
           }
         }
       });
-      return;
-    } else {
-      // Verificar transmissões OBS (lives)
-      const [obsRows] = await db.execute(
-        `SELECT * FROM lives 
-         WHERE (codigo_stm = ? OR codigo_stm IN (
-           SELECT codigo FROM streamings WHERE codigo_cliente = ?
-         )) AND status = "1" 
-         ORDER BY data_inicio DESC LIMIT 1`,
-        [userId, userId]
-      );
-
-      if (obsRows.length > 0) {
-        const obsLive = obsRows[0];
-        const now = new Date();
-        const dataInicio = new Date(obsLive.data_inicio);
-        const diffMs = now.getTime() - dataInicio.getTime();
-        const uptime = formatDuration(Math.floor(diffMs / 1000));
-
-        sendResponse({
-          success: true,
-          is_live: true,
-          stream_type: 'obs',
-          obs_stream: {
-            is_live: true,
-            stream_url: `https://stmv1.udicast.com/${userLogin}/${userLogin}/playlist.m3u8`,
-            viewers: Math.floor(Math.random() * 30) + 5,
-            bitrate: 2500,
-            uptime: uptime,
-            recording: false
-          }
-        });
-        return;
-      } else {
-        // Nenhuma transmissão ativa - limpar transmissões órfãs
-        await cleanupInactiveTransmissions(userId);
-
-        sendResponse({
-          success: true,
-          is_live: false,
-          stream_type: null,
-          transmission: null
-        });
-        return;
-      }
     }
+
+    // Se não tiver playlist ativa, verificar OBS/lives
+    const [obsRows] = await db.execute(
+      `SELECT * FROM lives 
+       WHERE codigo_stm = ?
+       ORDER BY data_inicio DESC LIMIT 1`,
+      [userId]
+    );
+
+    if (obsRows.length > 0) {
+      const obsLive = obsRows[0];
+      const now = new Date();
+      const dataInicio = new Date(obsLive.data_inicio);
+      const diffMs = now.getTime() - dataInicio.getTime();
+      const uptime = formatDuration(Math.floor(diffMs / 1000));
+
+      return res.json({
+        success: true,
+        is_live: true,
+        stream_type: 'obs',
+        obs_stream: {
+          id: obsLive.codigo,
+          stream_url: `https://stmv1.udicast.com/${userLogin}/${userLogin}/playlist.m3u8`,
+          viewers: Math.floor(Math.random() * 30) + 5,
+          bitrate: 2500,
+          uptime: uptime,
+          recording: false,
+          isActive: true
+        }
+      });
+    }
+
+    // Nenhuma transmissão encontrada
+    res.json({
+      success: true,
+      is_live: false,
+      stream_type: null,
+      transmission: null
+    });
+
   } catch (error) {
     console.error('Erro ao verificar status:', error);
-    if (!responseSent) {
-      res.status(500).json({ success: false, error: 'Erro interno do servidor' });
-    }
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
+
 // GET /api/streaming/wowza-debug - Debug da API Wowza (admin)
 router.get('/wowza-debug', authMiddleware, async (req, res) => {
   try {
@@ -740,11 +753,11 @@ router.post('/start', authMiddleware, async (req, res) => {
     // URLs do player
     const wowzaHost = 'stmv1.udicast.com';
     const playerUrls = {
-      hls: `http://${wowzaHost}:1935/samhost/smil:playlists_agendamentos.smil/playlist.m3u8`,
-      hls_http: `http://${wowzaHost}/samhost/smil:playlists_agendamentos.smil/playlist.m3u8`,
-      rtmp: `rtmp://${wowzaHost}:1935/samhost/smil:playlists_agendamentos.smil`,
-      rtsp: `rtsp://${wowzaHost}:554/samhost/smil:playlists_agendamentos.smil`,
-      dash: `http://${wowzaHost}:1935/samhost/smil:playlists_agendamentos.smil/manifest.mpd`
+      hls: `http://${wowzaHost}:1935/${userLogin}/${userLogin}/playlist.m3u8`,
+      hls_http: `http://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`,
+      rtmp: `rtmp://${wowzaHost}:1935/${userLogin}/${userLogin}`,
+      rtsp: `rtsp://${wowzaHost}:554/${userLogin}/${userLogin}`,
+      dash: `http://${wowzaHost}:1935/${userLogin}/${userLogin}/manifest.mpd`
     };
 
     console.log(`✅ Transmissão de playlist iniciada - ID: ${transmissionId}, Playlist: ${playlist.nome}`);
@@ -768,7 +781,7 @@ router.post('/start', authMiddleware, async (req, res) => {
       },
       player_urls: playerUrls,
       wowza_data: {
-        rtmpUrl: `rtmp://${wowzaHost}:1935/samhost`,
+        rtmpUrl: `rtmp://${wowzaHost}:1935/${userLogin}`,
         streamName: userLogin,
         hlsUrl: playerUrls.hls,
         bitrate: 2500
