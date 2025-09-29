@@ -75,7 +75,7 @@ router.get('/iframe', async (req, res) => {
         
         if (playlistRows.length > 0) {
           const wowzaHost = 'stmv1.udicast.com';
-          videoUrl = `https://${wowzaHost}/${userLogin}/smil:playlists_agendamentos.smil/playlist.m3u8`;
+          videoUrl = `https://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`;
           title = `Playlist: ${playlistRows[0].nome}`;
           isLive = true;
         }
@@ -92,7 +92,7 @@ router.get('/iframe', async (req, res) => {
       if (stream.includes('_playlist')) {
         // Stream de playlist - usar aplicação específica do usuário
         const userFromStream = stream.replace('_playlist', '');
-        videoUrl = `https://${wowzaHost}/${userFromStream}/smil:playlists_agendamentos.smil/playlist.m3u8`;
+        videoUrl = `https://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`;
       } else {
         // Stream OBS - usar aplicação específica do usuário
         videoUrl = `https://${wowzaHost}/${userLogin}/${userLogin}/playlist.m3u8`;
