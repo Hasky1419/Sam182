@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import IFrameVideoPlayer from '../../components/IFrameVideoPlayer';
+import StreamingControl from '../../components/StreamingControl';
 
 interface Platform {
   id: string;
@@ -422,6 +423,13 @@ const IniciarTransmissao: React.FC = () => {
         <Radio className="h-8 w-8 text-primary-600" />
         <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Lives</h1>
       </div>
+
+      {/* Controle de Streaming */}
+      <StreamingControl
+        login={userLogin}
+        onStatusChange={loadLives}
+        showAdminControls={user?.tipo === 'admin' || user?.tipo === 'revenda'}
+      />
 
       {/* Aviso importante */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

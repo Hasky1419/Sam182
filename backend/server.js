@@ -32,6 +32,7 @@ const smilManagementRoutes = require('./routes/smil-management');
 const dadosConexaoRoutes = require('./routes/dados-conexao');
 const playerExternalRoutes = require('./routes/player-external');
 const playerPortRoutes = require('./routes/player-port');
+const streamingControlRoutes = require('./routes/streaming-control');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -364,6 +365,7 @@ app.use('/api/smil-management', smilManagementRoutes);
 app.use('/api/dados-conexao', dadosConexaoRoutes);
 app.use('/api/player-external', playerExternalRoutes);
 app.use('/api/player-port', playerPortRoutes);
+app.use('/api/streaming-control', streamingControlRoutes);
 app.use('/api/streaming', streamingRoutes);
 
 // Middleware para verificar se tabela lives existe

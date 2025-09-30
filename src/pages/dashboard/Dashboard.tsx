@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStream } from '../../context/StreamContext';
-import { 
+import {
   Activity, Users, Zap, Clock, Play, Square, Radio, Video, Pause,
   TrendingUp, Globe, Monitor, Smartphone, Eye, Settings,
   AlertCircle, CheckCircle, Wifi, WifiOff, Server, HardDrive, RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import IFrameVideoPlayer from '../../components/IFrameVideoPlayer';
+import StreamingControlInline from '../../components/StreamingControlInline';
 
 interface DashboardStats {
   totalVideos: number;
@@ -510,7 +511,12 @@ const Dashboard: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Player Universal</h2>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
+                <StreamingControlInline
+                  login={userLogin}
+                  onStatusChange={loadStreamStatus}
+                  compact={true}
+                />
                 {streamStatus?.is_live ? (
                   <div className="flex items-center space-x-2 px-3 py-1 bg-red-100 rounded-full">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
